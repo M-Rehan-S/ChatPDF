@@ -630,7 +630,7 @@
           <div class="doc-name" title="${doc.name}">${doc.name}</div>
           <div class="doc-meta">${doc.pages} pages · ${formatBytes(doc.size)}</div>
         </div>
-        <button class="doc-del" title="Remove" data-id="${doc.id}">
+        <button class="doc-del" title="Remove" data-id="${doc.name}">
           <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>`;
       docList.appendChild(card);
@@ -647,10 +647,11 @@
 
   async function removeDoc(id) {
     try {
+      console.log('Removing doc', id);
       /* ── BACKEND ENDPOINT: DELETE /document/<id> ── */
-      await fetch(`/document/${id}`, { method: 'DELETE' });
+      await fetch(`/delete/${id}`, { method: 'DELETE' });
     } catch (_) { /* soft fail */ }
-    state.docs = state.docs.filter(d => String(d.id) !== String(id));
+    state.docs = state.docs.filter(d => String(d.name) !== String(id));
     renderDocList();
   }
 

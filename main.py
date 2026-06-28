@@ -31,14 +31,6 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload_pdf():   
     global VectorStore
-    
-    # Expecting 'files' as a multi-file field key from frontend
-    # if "files" not in request.files:
-    #     return jsonify({"error": "No files key found in request"}), 400
-        
-    # files = request.files.getlist("files")
-    # if not files or files[0].filename == "":
-    #     return jsonify({"error": "No selected files"}), 400
     file = request.files.get("file")
     if not file or file.filename == "":
         return jsonify({"error": "No selected file"}), 400
@@ -59,9 +51,11 @@ def upload_pdf():
     try:
         loader = PyPDFLoader(filepath)
         docs = loader.load()
-        
+        pages = len(docs)
+        name = file.filename
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=100)
         chunks = text_splitter.split_documents(docs)
+        chunksCount = len(chunks)
         all_chunks.extend(chunks)
     except Exception as e:
         return jsonify({"error": f"Failed to parse {file.filename}: {str(e)}"}), 500
@@ -78,12 +72,42 @@ def upload_pdf():
 
         return jsonify({
             "message": f"Successfully added {len(processed_files)} file(s) to the knowledge base!",
-            "files": processed_files
+            'name': name,
+            'pages': pages,
+            'chunks': chunksCount
         }), 200
 
     except Exception as e:
         return jsonify({"error": f"Vector Store error: {str(e)}"}), 500
 
+
+@app.route('/delete/<filename>', methods=['DELETE'])
+def delete(filename):
+    global VectorStore
+    
+    if VectorStore is None:
+        return jsonify({"error": "Knowledge base is empty."}), 400
+
+    try:
+        # Reconstruct the exact path string that LangChain generated during upload
+        # Example: "uploads/my_lecture_notes.pdf"
+        target_source_path = os.path.join(upload_folder, filename)
+        
+        # Query Chroma directly to remove chunks matching that specific source path
+        VectorStore._collection.delete(
+            where={"source": target_source_path}
+        )
+        if os.path.exists(target_source_path):
+            os.remove(target_source_path)  # Remove the file from the uploads folder
+        else :
+            print(f"File not found: {target_source_path}")
+            return jsonify({"error": f"File {filename} not found in uploads."}), 404
+        return jsonify({
+            "message": f"Successfully dropped all embeddings for file: {filename}"
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to delete document: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
