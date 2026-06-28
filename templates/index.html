@@ -709,7 +709,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          question: q,
+          query: q,
           history: state.chatHistory.slice(-10),
           top_k: parseInt($('top-k').value),
         })
