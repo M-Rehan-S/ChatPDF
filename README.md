@@ -171,4 +171,4 @@ Clears all documents and resets the index.
 
 ## License
 
-GNU.
+GNU General Public License.
